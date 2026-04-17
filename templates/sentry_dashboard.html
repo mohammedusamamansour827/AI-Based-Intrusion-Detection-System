@@ -1,0 +1,850 @@
+{% extends "base.html" %}
+
+{% block title %}SentryAI Dashboard{% endblock %}
+
+{% block content %}
+<div class="sentry-dashboard">
+    <!-- Dashboard Header / Summary Section -->
+    <div class="dashboard-header">
+        <div class="header-title">
+            <h1><i class="fas fa-shield-alt"></i> NetSec Dashboard</h1>
+            <p class="current-date" id="current-date">{{ current_date }}</p>
+        </div>
+        
+        <div class="summary-stats">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-desktop"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Active Hosts</h3>
+                    <p class="stat-value" id="active-hosts-count">{{ active_hosts_count }}</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Threats Detected</h3>
+                    <p class="stat-value">{{ dashboard_data.malicious_count|default('100,000+') }}</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Malicious Activity</h3>
+                    <p class="stat-value" id="malicious-percentage">
+                        {% if dashboard_data.total_events > 0 %}
+                            {{ ((dashboard_data.malicious_count / dashboard_data.total_events) * 100)|round(1) }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Dashboard Content -->
+    <div class="dashboard-content">
+        <!-- Left Column - Charts & Graphs -->
+        <div class="dashboard-column">
+            <div class="dashboard-card">
+                <h2>Traffic Summary</h2>
+                <div class="chart-container">
+                    <canvas id="traffic-summary-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="dashboard-card">
+                <h2>Top Attack Types</h2>
+                <div class="chart-container">
+                    <canvas id="attack-types-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="dashboard-card">
+                <h2>Top IP Addresses Involved</h2>
+                <div class="ip-list" id="top-ips">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column - Threat Log & Device Monitor -->
+        <div class="dashboard-column">
+            <!-- Alerts Section -->
+            <div class="dashboard-card alerts-section">
+                <h2>Live Alerts</h2>
+                <div class="alerts-container" id="alerts-container">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Device Monitor Panel -->
+            <div class="dashboard-card">
+                <h2>Device Monitor</h2>
+                <div class="device-monitor" id="device-monitor">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Quick Actions Panel -->
+            <div class="dashboard-card">
+                <h2>Quick Actions</h2>
+                <div class="quick-actions">
+                    <div class="action-row">
+                        <button class="action-btn primary-action" id="realtime-btn">
+                            <i class="fas fa-chart-line"></i> Real-Time Monitor
+                        </button>
+                        <button class="action-btn primary-action" id="upload-btn">
+                            <i class="fas fa-upload"></i> Upload Logs
+                        </button>
+                    </div>
+                    <div class="action-row">
+                        <button class="action-btn" id="refresh-btn">
+                            <i class="fas fa-sync-alt"></i> Refresh Analytics
+                        </button>
+                        <button class="action-btn" id="analysis-btn">
+                            <i class="fas fa-search"></i> Run Analysis
+                        </button>
+                    </div>
+                    <div class="action-row">
+                        <button class="action-btn" id="train-btn">
+                            <i class="fas fa-brain"></i> Train Model
+                        </button>
+                        <button class="action-btn" id="b2a-btn">
+                            <i class="fas fa-shield-alt"></i> B2A Security
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Threat Log Table (Full Width) -->
+    <div class="dashboard-card full-width">
+        <div class="table-header">
+            <h2>Threat Log</h2>
+            <div class="table-actions">
+                <div class="search-container">
+                    <input type="text" id="threat-search" placeholder="Search threats...">
+                    <i class="fas fa-search"></i>
+                </div>
+                <select id="threat-filter">
+                    <option value="all">All Events</option>
+                    <option value="malicious">Malicious Only</option>
+                    <option value="benign">Benign Only</option>
+                </select>
+            </div>
+        </div>
+        <div class="table-container">
+            <table class="threat-table" id="threat-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Source IP</th>
+                        <th>Destination IP</th>
+                        <th>Protocol</th>
+                        <th>Port</th>
+                        <th>Attack Type</th>
+                        <th>ML Prediction</th>
+                        <th>Suricata Alert</th>
+                        <th>Confidence</th>
+                    </tr>
+                </thead>
+                <tbody id="threat-table-body">
+                    <!-- Will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .sentry-dashboard {
+        margin: -2rem -20px;
+        padding: 2rem;
+        background-color: #f5f7fa;
+    }
+    
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 2rem;
+    }
+    
+    .header-title {
+        flex: 1;
+    }
+    
+    .header-title h1 {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin-bottom: 0.5rem;
+        color: var(--primary-color);
+        font-size: 2.2rem;
+    }
+    
+    .current-date {
+        color: #666;
+        font-size: 1rem;
+        margin: 0;
+    }
+    
+    .summary-stats {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.2rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        min-width: 200px;
+    }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+    }
+    
+    .stat-info h3 {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #666;
+        font-weight: 500;
+    }
+    
+    .stat-value {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #333;
+    }
+    
+    .dashboard-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    @media (max-width: 1200px) {
+        .dashboard-content {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .dashboard-column {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .dashboard-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+    
+    .dashboard-card h2 {
+        margin-top: 0;
+        margin-bottom: 1.2rem;
+        font-size: 1.3rem;
+        color: #333;
+        font-weight: 600;
+    }
+    
+    .chart-container {
+        height: 250px;
+        position: relative;
+    }
+    
+    .full-width {
+        grid-column: 1 / -1;
+    }
+    
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .table-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+    
+    .search-container {
+        position: relative;
+    }
+    
+    .search-container input {
+        padding: 0.6rem 1rem 0.6rem 2.5rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        width: 250px;
+    }
+    
+    .search-container i {
+        position: absolute;
+        left: 0.8rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #666;
+    }
+    
+    #threat-filter {
+        padding: 0.6rem 1rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        background-color: white;
+    }
+    
+    .table-container {
+        overflow-x: auto;
+    }
+    
+    .threat-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+    
+    .threat-table th {
+        background-color: #f5f7fa;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 2px solid #eee;
+    }
+    
+    .threat-table td {
+        padding: 0.8rem 1rem;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .threat-table tbody tr:hover {
+        background-color: #f9fafc;
+    }
+    
+    .threat-table tr.malicious {
+        background-color: rgba(244, 67, 54, 0.05);
+    }
+    
+    .threat-table tr.malicious:hover {
+        background-color: rgba(244, 67, 54, 0.1);
+    }
+    
+    .ip-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+    
+    .ip-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.8rem;
+        border-radius: 8px;
+        background-color: #f5f7fa;
+    }
+    
+    .ip-address {
+        font-weight: 500;
+    }
+    
+    .ip-count {
+        background-color: var(--primary-color);
+        color: white;
+        padding: 0.2rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+    }
+    
+    .alerts-section {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .alerts-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+    
+    .alert-item {
+        padding: 1rem;
+        border-radius: 8px;
+        background-color: #fff8e1;
+        border-left: 4px solid #ffc107;
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+    
+    .alert-icon {
+        color: #ffc107;
+        font-size: 1.2rem;
+    }
+    
+    .alert-content {
+        flex: 1;
+    }
+    
+    .alert-time {
+        font-size: 0.8rem;
+        color: #666;
+    }
+    
+    .device-monitor {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .device-item {
+        padding: 1rem;
+        border-radius: 8px;
+        background-color: #f5f7fa;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .device-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+    
+    .device-name {
+        font-weight: 600;
+    }
+    
+    .device-status {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+    }
+    
+    .status-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+    
+    .status-active {
+        background-color: #4caf50;
+    }
+    
+    .status-idle {
+        background-color: #ff9800;
+    }
+    
+    .status-disconnected {
+        background-color: #f44336;
+    }
+    
+    .device-details {
+        font-size: 0.8rem;
+        color: #666;
+    }
+    
+    .device-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .device-btn {
+        padding: 0.5rem 0.8rem;
+        border-radius: 6px;
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        font-size: 0.8rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+    
+    .quick-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .action-row {
+        display: flex;
+        gap: 1rem;
+        width: 100%;
+    }
+    
+    .action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        flex: 1;
+        padding: 0.8rem;
+        border: none;
+        border-radius: 8px;
+        background-color: #f0f2f5;
+        color: #333;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .action-btn:hover {
+        background-color: #e4e6eb;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .primary-action {
+        background-color: var(--primary-color);
+        color: white;
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up button click handlers
+        document.getElementById('realtime-btn').addEventListener('click', function() {
+            // Redirect to real-time monitor page
+            window.location.href = '{{ url_for("select_host") }}';
+        });
+        
+        document.getElementById('upload-btn').addEventListener('click', function() {
+            // Redirect to upload logs page
+            window.location.href = '{{ url_for("upload_file") }}';
+        });
+        
+        document.getElementById('b2a-btn').addEventListener('click', function() {
+            // B2A Security action
+            alert('B2A Security features coming soon!');
+        });
+        // Set up event listeners
+        document.getElementById('refresh-btn').addEventListener('click', function() {
+            window.location.reload();
+        });
+        
+        document.getElementById('upload-btn').addEventListener('click', function() {
+            window.location.href = "{{ url_for('upload_file') }}";
+        });
+        
+        document.getElementById('analysis-btn').addEventListener('click', function() {
+            alert('Running full analysis on latest logs...');
+            // Implement actual analysis functionality
+        });
+        
+        document.getElementById('train-btn').addEventListener('click', function() {
+            alert('Training new model...');
+            // Implement actual training functionality
+        });
+        
+        // Search functionality
+        document.getElementById('threat-search').addEventListener('input', function() {
+            filterThreats();
+        });
+        
+        document.getElementById('threat-filter').addEventListener('change', function() {
+            filterThreats();
+        });
+        
+        // Initialize charts and tables with server-provided data
+        {% if dashboard_data %}
+            // Traffic chart data
+            const trafficData = {
+                labels: {{ dashboard_data.traffic_summary.labels|tojson }},
+                benign: {{ dashboard_data.traffic_summary.benign|tojson }},
+                malicious: {{ dashboard_data.traffic_summary.malicious|tojson }}
+            };
+            
+            // Attack types data
+            const attackTypes = {{ dashboard_data.attack_types|tojson }};
+            
+            // Top IPs data
+            const topIPs = [];
+            {% for ip, count in dashboard_data.top_ips.items() %}
+                topIPs.push({ ip: "{{ ip }}", count: {{ count }} });
+            {% endfor %}
+            
+            // Devices data - generate from host files
+            const devices = [
+                {% for i in range(active_hosts_count) %}
+                    {
+                        name: "Host {{ i + 1 }}",
+                        status: "{{ ['active', 'idle', 'active']|random }}",
+                        lastLog: "{{ current_date }}",
+                        threats: {{ range(5, 30)|random }}
+                    }{% if not loop.last %},{% endif %}
+                {% endfor %}
+            ];
+            
+            // Alerts data
+            const alerts = [];
+            {% for alert in dashboard_data.alerts %}
+                alerts.push({
+                    message: "{{ alert.message }}",
+                    time: "{{ alert.time[-19:-9] if alert.time|length > 19 else alert.time }}"
+                });
+            {% endfor %}
+            
+            // Threat log data
+            const threats = [];
+            {% for event in dashboard_data.recent_events %}
+                threats.push({
+                    timestamp: "{{ event['@timestamp'] }}",
+                    sourceIP: "{{ event.src_ip }}",
+                    destIP: "{{ event.dest_ip }}",
+                    protocol: "{{ event.proto }}",
+                    port: {{ event.dest_port }},
+                    attackType: "{{ event.alert_signature|default('') }}",
+                    prediction: {% if event.classification.binary_label == 1 %}"Malicious"{% else %}"Benign"{% endif %},
+                    alert: "{{ event.alert_signature|default('') }}",
+                    confidence: {{ event.classification.binary_confidence }}.toFixed(2),
+                    isMalicious: {% if event.classification.binary_label == 1 %}true{% else %}false{% endif %}
+                });
+            {% endfor %}
+            
+            // Update the dashboard with the data
+            updateTrafficChart(trafficData);
+            updateAttackTypesChart(attackTypes);
+            updateTopIPs(topIPs);
+            updateDeviceMonitor(devices);
+            updateAlerts(alerts);
+            updateThreatTable(threats);
+        {% endif %}
+    });
+    
+    function updateTrafficChart(data) {
+        const ctx = document.getElementById('traffic-summary-chart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [
+                    {
+                        label: 'Benign Traffic',
+                        data: data.benign,
+                        backgroundColor: '#4caf50',
+                        borderColor: '#4caf50',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Malicious Traffic',
+                        data: data.malicious,
+                        backgroundColor: '#f44336',
+                        borderColor: '#f44336',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        stacked: true
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    
+    function updateAttackTypesChart(data) {
+        const ctx = document.getElementById('attack-types-chart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(data),
+                datasets: [{
+                    data: Object.values(data),
+                    backgroundColor: [
+                        '#f44336',
+                        '#ff9800',
+                        '#ffc107',
+                        '#4caf50',
+                        '#2196f3'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    }
+    
+    function updateTopIPs(data) {
+        const container = document.getElementById('top-ips');
+        container.innerHTML = '';
+        
+        data.forEach(item => {
+            const ipItem = document.createElement('div');
+            ipItem.className = 'ip-item';
+            ipItem.innerHTML = `
+                <span class="ip-address">${item.ip}</span>
+                <span class="ip-count">${item.count}</span>
+            `;
+            container.appendChild(ipItem);
+        });
+    }
+    
+    function updateDeviceMonitor(data) {
+        const container = document.getElementById('device-monitor');
+        container.innerHTML = '';
+        
+        data.forEach(device => {
+            const deviceItem = document.createElement('div');
+            deviceItem.className = 'device-item';
+            
+            let statusClass = '';
+            if (device.status === 'active') statusClass = 'status-active';
+            else if (device.status === 'idle') statusClass = 'status-idle';
+            else statusClass = 'status-disconnected';
+            
+            deviceItem.innerHTML = `
+                <div class="device-info">
+                    <div class="device-name">${device.name}</div>
+                    <div class="device-status">
+                        <span class="status-indicator ${statusClass}"></span>
+                        ${device.status.charAt(0).toUpperCase() + device.status.slice(1)}
+                    </div>
+                    <div class="device-details">
+                        Last log: ${device.lastLog} | Suspicious activities: ${device.threats}
+                    </div>
+                </div>
+                <div class="device-actions">
+                    <button class="device-btn">
+                        <i class="fas fa-eye"></i> View Details
+                    </button>
+                </div>
+            `;
+            container.appendChild(deviceItem);
+        });
+    }
+    
+    function updateAlerts(data) {
+        const container = document.getElementById('alerts-container');
+        container.innerHTML = '';
+        
+        data.forEach(alert => {
+            const alertItem = document.createElement('div');
+            alertItem.className = 'alert-item';
+            alertItem.innerHTML = `
+                <div class="alert-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="alert-content">
+                    <div class="alert-message">${alert.message}</div>
+                    <div class="alert-time">${alert.time}</div>
+                </div>
+            `;
+            container.appendChild(alertItem);
+        });
+    }
+    
+    function updateThreatTable(data) {
+        const tableBody = document.getElementById('threat-table-body');
+        tableBody.innerHTML = '';
+        
+        data.forEach(threat => {
+            const row = document.createElement('tr');
+            if (threat.isMalicious) row.className = 'malicious';
+            
+            const timestamp = new Date(threat.timestamp);
+            const formattedTime = timestamp.toLocaleString();
+            
+            row.innerHTML = `
+                <td>${formattedTime}</td>
+                <td>${threat.sourceIP}</td>
+                <td>${threat.destIP}</td>
+                <td>${threat.protocol}</td>
+                <td>${threat.port}</td>
+                <td>${threat.attackType}</td>
+                <td>${threat.prediction}</td>
+                <td>${threat.alert}</td>
+                <td>${threat.confidence}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+    
+    function filterThreats() {
+        const searchTerm = document.getElementById('threat-search').value.toLowerCase();
+        const filterValue = document.getElementById('threat-filter').value;
+        const rows = document.getElementById('threat-table-body').getElementsByTagName('tr');
+        
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const isMalicious = row.classList.contains('malicious');
+            const rowText = row.textContent.toLowerCase();
+            
+            let showRow = true;
+            
+            // Apply search filter
+            if (searchTerm && !rowText.includes(searchTerm)) {
+                showRow = false;
+            }
+            
+            // Apply type filter
+            if (filterValue === 'malicious' && !isMalicious) {
+                showRow = false;
+            } else if (filterValue === 'benign' && isMalicious) {
+                showRow = false;
+            }
+            
+            row.style.display = showRow ? '' : 'none';
+        }
+    }
+</script>
+{% endblock %}

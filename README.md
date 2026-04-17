@@ -111,6 +111,7 @@ This system is ideal for:
 
 ## 📜 License
 
+<<<<<<< HEAD
 MIT License
 
 ---
@@ -119,3 +120,8 @@ MIT License
 
 
 ---
+=======
+MIT License 
+---
+
+>>>>>>> c8936d9 (Initial commit - AI-Based-Intrusion-Detection-System)

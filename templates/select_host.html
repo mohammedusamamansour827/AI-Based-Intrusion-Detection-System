@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Select Host File{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Select Your Network</h1>
+    <p class="page-subtitle">Choose a network host to analyze or upload a new file for real-time defense monitoring</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form action="{{ url_for("process_host_file") }}" method="post" id="host-selection-form">
+        <input type="hidden" id="selected_host_file" name="host_file" value="">
+        
+        <div class="host-cards">
+            {% if host_files %}
+                {% for file in host_files %}
+                    <div class="host-card" data-file="{{ file }}" onclick="selectHost(this)">
+                        <div class="host-icon">
+                            <i class="fas fa-network-wired"></i>
+                        </div>
+                        <h3>{{ file | replace('_', '.') | replace('.json', '') }}</h3>
+                        <p>Network host data ready for analysis</p>
+                        <div class="card-footer">
+                            <span class="file-size">JSON Data</span>
+                            <button type="button" class="btn btn-outline select-btn" onclick="event.stopPropagation(); selectHost(this.parentNode.parentNode)">Select</button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-hosts-message">
+                    <p>No host files found in hosts directory.</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-primary" id="analyze-btn" disabled>Analyze Selected Network</button>
+        </div>
+    </form>
+
+   
+
+<script>
+    function selectHost(cardElement) {
+        // Remove selected class from all cards
+        document.querySelectorAll('.host-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        
+        // Add selected class to clicked card
+        cardElement.classList.add('selected');
+        
+        // Update hidden input with selected file
+        const fileName = cardElement.getAttribute('data-file');
+        document.getElementById('selected_host_file').value = fileName;
+        
+        // Enable analyze button
+        document.getElementById('analyze-btn').disabled = false;
+    }
+</script>
+{% endblock %}
+

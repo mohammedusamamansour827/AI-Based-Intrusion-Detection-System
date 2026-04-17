@@ -1,0 +1,15 @@
+Binary Classification Report (XGBoost - Retrained)
+Accuracy: 0.9724
+
+              precision    recall  f1-score   support
+
+      Benign       0.97      1.00      0.98     11694
+   Malicious       0.99      0.89      0.94      3386
+
+    accuracy                           0.97     15080
+   macro avg       0.98      0.94      0.96     15080
+weighted avg       0.97      0.97      0.97     15080
+
+Confusion Matrix:
+[[11653    41]
+ [  375  3011]]

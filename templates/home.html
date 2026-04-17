@@ -1,0 +1,790 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to NetSec{% endblock %}
+
+{% block content %}
+<style>
+/* Spinner loader */
+#loader {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #0f2027, var(--primary-color));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(8px);
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.loader-content {
+    text-align: center;
+    max-width: 600px;
+    padding: 2rem;
+    position: relative;
+}
+
+.loader-content::before {
+    content: '';
+    position: absolute;
+    top: -20px;
+    left: -20px;
+    right: -20px;
+    bottom: -20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    z-index: -1;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(5px);
+}
+
+.loader-logo {
+    font-size: 3rem;
+    margin-bottom: 20px;
+    color: white;
+    font-weight: 800;
+    text-shadow: 0 0 15px rgba(67, 97, 238, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+}
+
+.loader-logo i {
+    font-size: 2.5rem;
+    background: linear-gradient(135deg, #ffffff, #a0c4ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.loader-progress {
+    width: 100%;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    margin: 20px 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.loader-progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--primary-color), #a0c4ff);
+    border-radius: 10px;
+    animation: progress 8s ease-in-out forwards;
+}
+
+@keyframes progress {
+    0% { width: 0%; }
+    20% { width: 20%; }
+    40% { width: 40%; }
+    60% { width: 60%; }
+    80% { width: 80%; }
+    100% { width: 100%; }
+}
+
+.typing-effect {
+    display: inline-block;
+    border-right: 2px solid var(--primary-color);
+    white-space: nowrap;
+    overflow: hidden;
+    animation: typing 8s steps(60, end), blink .75s step-end infinite;
+    font-size: 1.6rem;
+    width: 0;
+    color: white;
+    margin-top: 1rem;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+.loader-status {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    margin-top: 1.5rem;
+    font-style: italic;
+}
+
+.loader-dots {
+    display: inline-block;
+}
+
+.loader-dots::after {
+    content: '';
+    animation: dots 1.5s infinite;
+}
+
+@keyframes dots {
+    0% { content: '.'; }
+    33% { content: '..'; }
+    66% { content: '...'; }
+    100% { content: '.'; }
+}
+
+@keyframes typing {
+    from { width: 0 }
+    to { width: 100% }
+}
+
+@keyframes blink {
+    from, to { border-color: transparent }
+    50% { border-color: var(--primary-color) }
+}
+
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    padding: 120px 20px;
+    border-radius: 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    margin-top: -2rem;
+    margin-left: -20px;
+    margin-right: -20px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><pattern id="pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(255, 255, 255, 0.2)"/></pattern><rect x="0" y="0" width="100%" height="100%" fill="url(%23pattern)"/></svg>');
+    opacity: 0.5;
+}
+
+.hero-section::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255, 255, 255, 0.1)" d="M0,192L48,197.3C96,203,192,213,288,229.3C384,245,480,267,576,250.7C672,235,768,181,864,181.3C960,181,1056,235,1152,234.7C1248,235,1344,181,1392,154.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+    background-position: bottom;
+    background-repeat: no-repeat;
+    background-size: cover;
+    opacity: 0.6;
+    z-index: 0;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.hero-section h1 {
+    font-size: 4.5rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    letter-spacing: -1px;
+    text-shadow: 0 2px 15px rgba(0,0,0,0.3);
+    background: linear-gradient(90deg, #ffffff, #e0e7ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    display: inline-block;
+}
+
+.hero-description {
+    font-size: 1.5rem;
+    max-width: 750px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.7;
+    opacity: 0.95;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.2);
+    font-weight: 300;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.btn-hero {
+    padding: 0.8rem 2rem;
+    font-weight: 600;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.btn-hero-primary {
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--primary-color);
+    border: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.btn-hero-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.8), rgba(255,255,255,0));
+    transition: all 0.6s ease;
+    z-index: -1;
+}
+
+.btn-hero-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    color: var(--secondary-color);
+}
+
+.btn-hero-primary:hover::before {
+    left: 100%;
+}
+
+.btn-hero-secondary {
+    background: rgba(255,255,255,0.15);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+    backdrop-filter: blur(5px);
+}
+
+.btn-hero-secondary:hover {
+    background: rgba(255,255,255,0.25);
+    transform: translateY(-3px);
+}
+
+.features-section {
+    padding: 5rem 0;
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 3rem;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    position: relative;
+}
+
+.section-title::after {
+    content: '';
+    display: block;
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    margin: 1rem auto 0;
+    border-radius: 2px;
+}
+
+.feature-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+    padding: 2.5rem;
+    height: 100%;
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.03);
+    z-index: 1;
+}
+
+.feature-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    border-color: rgba(67, 97, 238, 0.1);
+}
+
+.feature-card:hover::after {
+    transform: scaleX(1);
+}
+
+.feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    display: inline-block;
+    color: white;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    width: 90px;
+    height: 90px;
+    line-height: 90px;
+    text-align: center;
+    border-radius: 50%;
+    box-shadow: 0 10px 20px rgba(67, 97, 238, 0.2);
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.feature-icon::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><pattern id="pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255, 255, 255, 0.3)"/></pattern><rect x="0" y="0" width="100%" height="100%" fill="url(%23pattern)"/></svg>');
+    z-index: -1;
+}
+
+.feature-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--gray-800);
+}
+
+.feature-description {
+    color: var(--gray-600);
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+}
+
+.stats-section {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    padding: 6rem 0;
+    margin: 5rem -20px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.stats-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(67, 97, 238, 0.03)" d="M0,96L48,112C96,128,192,160,288,186.7C384,213,480,235,576,213.3C672,192,768,128,864,128C960,128,1056,192,1152,213.3C1248,235,1344,213,1392,202.7L1440,192L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+    background-position: bottom;
+    background-repeat: no-repeat;
+    background-size: cover;
+    opacity: 1;
+}
+
+.stats-box {
+    background-color: white;
+    padding: 3rem 2.5rem;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.03);
+    transform: translateY(0);
+    transition: all 0.4s ease;
+}
+
+.stats-box:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+}
+
+.stats-icon {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    display: inline-block;
+}
+
+.stats-number {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: var(--gray-800);
+    margin-bottom: 0.5rem;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    position: relative;
+    display: inline-block;
+}
+
+.stats-number::after {
+    content: '';
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    border-radius: 2px;
+}
+
+.stats-label {
+    color: var(--gray-600);
+    font-size: 1rem;
+}
+
+.cta-section {
+    background: white;
+    padding: 6rem 0;
+    text-align: center;
+    border-radius: 20px;
+    margin-top: 6rem;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(67, 97, 238, 0.05);
+}
+
+.cta-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><pattern id="pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="rgba(67, 97, 238, 0.05)"/></pattern><rect x="0" y="0" width="100%" height="100%" fill="url(%23pattern)"/></svg>');
+}
+
+.cta-section::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+}
+
+.cta-title {
+    font-size: 2.8rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    color: var(--gray-800);
+    background: linear-gradient(90deg, var(--gray-800), var(--primary-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    display: inline-block;
+}
+
+.cta-description {
+    font-size: 1.3rem;
+    color: var(--gray-600);
+    max-width: 750px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.7;
+}
+
+.cta-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.cta-badges {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 3rem;
+    flex-wrap: wrap;
+}
+
+.badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(67, 97, 238, 0.05);
+    border-radius: 50px;
+    color: var(--gray-700);
+    font-weight: 500;
+}
+
+.badge i {
+    color: var(--primary-color);
+}
+
+.ml-3 {
+    margin-left: 1rem;
+}
+
+.mt-5 {
+    margin-top: 3rem;
+}
+
+.footer-note {
+    margin-top: 5rem;
+    text-align: center;
+    color: var(--gray-600);
+    font-size: 0.9rem;
+    padding: 1rem;
+    border-top: 1px solid var(--gray-200);
+}
+
+.university-logo {
+    height: 40px;
+    margin-top: 1rem;
+    opacity: 0.8;
+}
+
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 60px 20px;
+    }
+    
+    .hero-section h1 {
+        font-size: 2.5rem;
+    }
+    
+    .hero-description {
+        font-size: 1.1rem;
+    }
+    
+    .hero-buttons {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .section-title {
+        font-size: 2rem;
+    }
+    
+    .feature-card {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+}
+
+</style>
+
+<!-- Enhanced Loader -->
+<<!-- Loader -->
+<div id="loader">
+    <div class="loader-content">
+        <div class="loader-logo">
+            <i class="fas fa-shield-alt"></i> NetSec
+        </div>
+        <div class="loader-progress">
+            <div class="loader-progress-bar"></div>
+        </div>
+        <p class="typing-effect">Initializing real-time threat detection modules and machine learning engine...</p>
+        <div class="loader-status">
+            <span id="loader-status-text">Loading Suricata rules<span class="loader-dots"></span></span>
+        </div>
+    </div>
+</div>
+
+<!-- Hero section -->
+<section class="hero-section">
+    <div class="hero-content">
+        <h1>Real-Time AI-Powered Network Defense</h1>
+        <p class="hero-description">
+            NetSec is an intelligent traffic classification system that analyzes real-time data using Suricata logs and advanced ML models trained on CIC-IDS and real network traffic.
+        </p>
+        <div class="hero-buttons">
+            <a href="{{ url_for('select_host') }}" class="btn btn-hero btn-hero-primary">
+                <i class="fas fa-brain mr-2"></i> Launch Threat Analyzer
+            </a>
+            <a href="{{ url_for('login') }}" class="btn btn-hero btn-hero-primary">
+                <i class="fas fa-shield-alt mr-2"></i> NetSec Dashboard
+            </a>
+            <a href="#features" class="btn btn-hero btn-hero-secondary">
+                <i class="fas fa-info-circle mr-2"></i> Learn More
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section" id="features">
+    <div class="container">
+        <h2 class="section-title">Key Features</h2>
+
+        <div class="features-grid row">
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                    <h3 class="feature-title">Threat Detection</h3>
+                    <p class="feature-description">Identify malicious traffic patterns and potential security threats in your network</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                    <h3 class="feature-title">Traffic Analysis</h3>
+                    <p class="feature-description">Comprehensive analysis of network traffic with detailed statistics and visualizations</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-tachometer-alt"></i></div>
+                    <h3 class="feature-title">Real-time Monitoring</h3>
+                    <p class="feature-description">Monitor network traffic in real-time with instant alerts for suspicious activities</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-upload"></i></div>
+                    <h3 class="feature-title">Upload Logs for Detection</h3>
+                    <p class="feature-description">Upload Suricata's eve.json manually for instant threat detection with visualization and reporting.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-brain"></i></div>
+                    <h3 class="feature-title">AI + Rule Fusion</h3>
+                    <p class="feature-description">Combines ML results with Suricata alert signatures to guarantee accuracy and never miss a known attack.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-chart-pie"></i></div>
+                    <h3 class="feature-title">Interactive Dashboards</h3>
+                    <p class="feature-description">Graphical insights including top attacks, benign vs malicious traffic, and filterable logs by device/IP.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-code"></i></div>
+                    <h3 class="feature-title">Open Source, Modular</h3>
+                    <p class="feature-description">Built with Python, Flask, Scikit-Learn, and full control over source code for educational & real deployment.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="stats-box">
+                    <div class="stats-icon"><i class="fas fa-brain"></i></div>
+                    <div class="stats-number">15+</div>
+                    <div class="stats-label">AI Models Trained</div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="stats-box">
+                    <div class="stats-icon"><i class="fas fa-virus-slash"></i></div>
+                    <div class="stats-number">6,400+</div>
+                    <div class="stats-label">Threats Detected</div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="stats-box">
+                    <div class="stats-icon"><i class="fas fa-server"></i></div>
+                    <div class="stats-number">8</div>
+                    <div class="stats-label">Active Hosts Monitored</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+    <div class="container text-center">
+        <h2 class="cta-title">Ready to Secure Your Network?</h2>
+        <p class="cta-description">Deploy NetSec to analyze and protect your infrastructure in real-time using smart models and Suricata rules.</p>
+        <div class="cta-buttons">
+            <a href="{{ url_for('select_host') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-shield-alt mr-2"></i> Start Now
+            </a>
+            <a href="{{ url_for('upload_file') }}" class="btn btn-outline-secondary btn-lg ml-3">
+                <i class="fas fa-upload mr-2"></i> Upload Log File
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<div class="footer-note text-center mt-5 mb-3 text-muted">
+    Built by students of <strong>El-Sewedy University of Technology</strong> – Graduation Project 2024/2025
+</div>
+
+
+<!-- Enhanced loader script with status messages -->
+<script>
+    window.addEventListener("load", function () {
+        const statusMessages = [
+            'Loading security modules',
+            'Initializing threat detection algorithms',
+            'Calibrating network sensors',
+            'Establishing secure connection',
+            'Loading AI models',
+            'Preparing defense systems',
+            'Finalizing security protocols'
+        ];
+        
+        const statusElement = document.getElementById('loader-status-text');
+        let messageIndex = 0;
+        
+        // Update status message every 1.2 seconds
+        const statusInterval = setInterval(function() {
+            if (messageIndex < statusMessages.length) {
+                statusElement.innerHTML = statusMessages[messageIndex] + '<span class="loader-dots"></span>';
+                messageIndex++;
+            } else {
+                clearInterval(statusInterval);
+                statusElement.innerHTML = 'All systems ready<span class="loader-dots"></span>';
+            }
+        }, 1200);
+        
+        // Show loader for longer time (9 seconds)
+        setTimeout(function() {
+            clearInterval(statusInterval);
+            const loader = document.getElementById("loader");
+            loader.style.opacity = "0";
+            loader.style.transition = "opacity 0.8s ease";
+            
+            setTimeout(function() {
+                loader.style.display = "none";
+            }, 800);
+        }, 9000);
+        
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

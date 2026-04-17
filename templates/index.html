@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="upload-container">
+    <div class="upload-header">
+        <h1>Suricata Traffic Analysis</h1>
+        <p class="upload-subtitle">Upload your Suricata eve.json file for comprehensive traffic analysis and threat detection</p>
+    </div>
+    
+    <div class="upload-card">
+        <div class="upload-icon">
+            <i class="fas fa-file-upload"></i>
+        </div>
+        
+        <form method="POST" enctype="multipart/form-data" class="upload-form">
+            <div class="form-group">
+                <label for="file" class="file-label">
+                    <span>Select eve.json file</span>
+                    <small>or drag and drop file here</small>
+                </label>
+                <input type="file" name="file" id="file" accept=".json" required class="file-input">
+                <div class="selected-file" id="selected-file">No file selected</div>
+            </div>
+            
+            <div class="form-group option-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" name="monitor" class="checkbox-input">
+                    <span class="checkbox-text">Enable real-time monitoring</span>
+                </label>
+                <div class="option-description">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Real-time monitoring will continuously analyze new events as they are added to the file</span>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-search"></i> Analyze Traffic
+            </button>
+        </form>
+    </div>
+    
+    
+
+<script>
+    // Update the selected file name when a file is chosen
+    document.getElementById('file').addEventListener('change', function() {
+        const fileInput = this;
+        const fileNameDisplay = document.getElementById('selected-file');
+        
+        if (fileInput.files.length > 0) {
+            fileNameDisplay.textContent = fileInput.files[0].name;
+            fileNameDisplay.classList.add('file-selected');
+        } else {
+            fileNameDisplay.textContent = 'No file selected';
+            fileNameDisplay.classList.remove('file-selected');
+        }
+    });
+    
+    // Drag and drop functionality
+    const dropArea = document.querySelector('.file-label');
+    const fileInput = document.getElementById('file');
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight() {
+        dropArea.classList.add('highlight');
+    }
+    
+    function unhighlight() {
+        dropArea.classList.remove('highlight');
+    }
+    
+    dropArea.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            fileInput.files = files;
+            const event = new Event('change');
+            fileInput.dispatchEvent(event);
+        }
+    }
+</script>
+{% endblock %}

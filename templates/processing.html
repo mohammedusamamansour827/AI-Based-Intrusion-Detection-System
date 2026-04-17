@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="processing-container">
+    <h1>Processing File: {{ filename }}</h1>
+    
+    <div class="progress-container">
+        <div class="progress-bar" id="progress-bar">
+            <div class="progress-fill" id="progress-fill" style="width: 0%;"></div>
+        </div>
+        <div class="progress-text" id="progress-text">0%</div>
+    </div>
+    
+    <div class="processing-stats" id="processing-stats">
+        <div class="stat-item">
+            <span class="stat-label">Processed:</span>
+            <span class="stat-value" id="processed-lines">0</span>
+            <span class="stat-label">of</span>
+            <span class="stat-value" id="total-lines">0</span>
+            <span class="stat-label">lines</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Benign:</span>
+            <span class="stat-value benign-count" id="benign-count">0</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Malicious:</span>
+            <span class="stat-value malicious-count" id="malicious-count">0</span>
+        </div>
+    </div>
+    
+    <div class="processing-message" id="processing-message">
+        Initializing...
+    </div>
+</div>
+
+<script>
+    // Function to update progress
+    function updateProgress() {
+        fetch('/status/{{ file_id }}')
+            .then(response => response.json())
+            .then(data => {
+                const totalLines = data.total_lines;
+                const processedLines = data.processed_lines;
+                const status = data.status;
+                const benignCount = data.benign_count;
+                const maliciousCount = data.malicious_count;
+                
+                // Update progress bar
+                let progressPercent = 0;
+                if (totalLines > 0) {
+                    progressPercent = Math.round((processedLines / totalLines) * 100);
+                }
+                
+                document.getElementById('progress-fill').style.width = `${progressPercent}%`;
+                document.getElementById('progress-text').textContent = `${progressPercent}%`;
+                
+                // Update stats
+                document.getElementById('processed-lines').textContent = processedLines;
+                document.getElementById('total-lines').textContent = totalLines;
+                document.getElementById('benign-count').textContent = benignCount;
+                document.getElementById('malicious-count').textContent = maliciousCount;
+                
+                // Update message based on status
+                if (status === 'initializing') {
+                    document.getElementById('processing-message').textContent = 'Initializing...';
+                } else if (status === 'processing') {
+                    document.getElementById('processing-message').textContent = 'Processing file...';
+                } else if (status === 'completed') {
+                    document.getElementById('processing-message').textContent = 'Processing complete!';
+                    // Redirect to results page
+                    window.location.href = `/results/{{ file_id }}`;
+                } else if (status === 'error') {
+                    document.getElementById('processing-message').textContent = `Error: ${data.error_message || 'Unknown error'}`;
+                }
+                
+                // Continue polling if not completed or error
+                if (status !== 'completed' && status !== 'error') {
+                    setTimeout(updateProgress, 500);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching status:', error);
+                document.getElementById('processing-message').textContent = 'Error connecting to server';
+                setTimeout(updateProgress, 2000);
+            });
+    }
+    
+    // Start polling for updates
+    updateProgress();
+</script>
+{% endblock %}

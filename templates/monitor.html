@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Real-time Monitoring: {{ filename }}</h1>
+<div id="results">
+    <table>
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Source IP</th>
+                <th>Destination IP</th>
+                <th>Protocol</th>
+                <th>Event Type</th>
+                <th>Alert</th>
+                <th>Binary Classification</th>
+                <th>Multi Classification</th>
+            </tr>
+        </thead>
+        <tbody id="results-body">
+        </tbody>
+    </table>
+</div>
+
+<script>
+const eventSource = new EventSource("{{ url_for('stream', filename=filename) }}");
+const resultsBody = document.getElementById('results-body');
+
+eventSource.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+    const row = document.createElement('tr');
+    
+    if (data.classification.binary_label === 1) {
+        row.className = 'malicious';
+    } else {
+        row.className = 'benign';
+    }
+    
+    row.innerHTML = `
+        <td>${data.timestamp || ''}</td>
+        <td>${data.src_ip || ''}</td>
+        <td>${data.dest_ip || ''}</td>
+        <td>${data.proto || ''}</td>
+        <td>${data.event_type || ''}</td>
+        <td>${data.alert_signature || 'None'}</td>
+        <td>
+            ${data.classification.binary_label === 1 ? 'Malicious' : 'Benign'}
+            (${(data.classification.binary_confidence * 100).toFixed(2)}%)
+        </td>
+        <td>
+            ${data.classification.multi_label}
+            (${(data.classification.multi_confidence * 100).toFixed(2)}%)
+        </td>
+    `;
+    
+    resultsBody.prepend(row);
+};
+</script>
+{% endblock %}  

@@ -1,0 +1,19 @@
+Multi-class Classification Report (XGBoost - Retrained)
+Accuracy: 0.9705
+
+              precision    recall  f1-score   support
+
+      Benign       0.97      1.00      0.98     11694
+  BruteForce       0.00      0.00      0.00         2
+     Masscan       0.00      0.00      0.00        60
+    PortScan       0.98      0.90      0.94      3324
+
+    accuracy                           0.97     15080
+   macro avg       0.49      0.47      0.48     15080
+weighted avg       0.97      0.97      0.97     15080
+
+Confusion Matrix:
+[[11654     0     0    40]
+ [    2     0     0     0]
+ [   37     0     0    23]
+ [  343     0     0  2981]]

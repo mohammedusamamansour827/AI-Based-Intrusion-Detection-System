@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>Traffic Analysis Dashboard</h1>
+        <div class="dashboard-nav">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">Upload New File</a>
+            <button id="download-pdf" class="btn btn-primary"><i class="fas fa-file-pdf"></i> Download PDF</button>
+        </div>
+    </div>
+
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-icon benign-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Benign Traffic</h3>
+                <div class="stat-value" id="benign-count">0</div>
+                <div class="stat-percentage" id="benign-percentage">0%</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon malicious-icon">
+                <i class="fas fa-bug"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Malicious Traffic</h3>
+                <div class="stat-value" id="malicious-count">0</div>
+                <div class="stat-percentage" id="malicious-percentage">0%</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon total-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Total Events</h3>
+                <div class="stat-value" id="total-count">0</div>
+                <div class="stat-percentage">100%</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon alert-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Alerts</h3>
+                <div class="stat-value" id="alert-count">0</div>
+                <div class="stat-percentage" id="alert-percentage">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <div class="chart-card">
+            <h3>Traffic Distribution</h3>
+            <canvas id="traffic-distribution-chart"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>Top Attack Categories</h3>
+            <canvas id="attack-categories-chart"></canvas>
+        </div>
+    </div>
+
+    <div class="recent-events">
+        <h3>Recent Events</h3>
+        <table class="dashboard-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Source IP</th>
+                    <th>Destination IP</th>
+                    <th>Protocol</th>
+                    <th>Event Type</th>
+                    <th>Classification</th>
+                    <th>Confidence</th>
+                </tr>
+            </thead>
+            <tbody id="recent-events-body">
+                <!-- Recent events will be loaded here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+// Initialize dashboard with data from the results
+function initDashboard(results) {
+    // Count statistics
+    let benignCount = 0;
+    let maliciousCount = 0;
+    let alertCount = 0;
+    let attackCategories = {};
+    
+    results.forEach(result => {
+        if (result.classification.binary_label === 1) {
+            maliciousCount++;
+            
+            // Count attack categories
+            const category = result.classification.multi_label;
+            if (category) {
+                if (!attackCategories[category]) {
+                    attackCategories[category] = 0;
+                }
+                attackCategories[category]++;
+            }
+            
+            if (result.alert_signature) {
+                alertCount++;
+            }
+        } else {
+            benignCount++;
+        }
+    });
+    
+    const totalCount = benignCount + maliciousCount;
+    
+    // Update stat cards
+    document.getElementById('benign-count').textContent = benignCount;
+    document.getElementById('malicious-count').textContent = maliciousCount;
+    document.getElementById('total-count').textContent = totalCount;
+    document.getElementById('alert-count').textContent = alertCount;
+    
+    document.getElementById('benign-percentage').textContent = 
+        totalCount > 0 ? Math.round((benignCount / totalCount) * 100) + '%' : '0%';
+    document.getElementById('malicious-percentage').textContent = 
+        totalCount > 0 ? Math.round((maliciousCount / totalCount) * 100) + '%' : '0%';
+    document.getElementById('alert-percentage').textContent = 
+        totalCount > 0 ? Math.round((alertCount / totalCount) * 100) + '%' : '0%';
+    
+    // Create traffic distribution chart
+    const trafficCtx = document.getElementById('traffic-distribution-chart').getContext('2d');
+    new Chart(trafficCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Benign', 'Malicious'],
+            datasets: [{
+                data: [benignCount, maliciousCount],
+                backgroundColor: ['#4caf50', '#f44336'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Create attack categories chart
+    const topCategories = Object.entries(attackCategories)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+    
+    const categoryCtx = document.getElementById('attack-categories-chart').getContext('2d');
+    new Chart(categoryCtx, {
+        type: 'bar',
+        data: {
+            labels: topCategories.map(cat => cat[0]),
+            datasets: [{
+                label: 'Count',
+                data: topCategories.map(cat => cat[1]),
+                backgroundColor: '#2196f3',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    
+    // Populate recent events table
+    const recentEventsBody = document.getElementById('recent-events-body');
+    results.slice(0, 10).forEach(result => {
+        const row = document.createElement('tr');
+        row.className = result.classification.binary_label === 1 ? 'malicious' : 'benign';
+        
+        row.innerHTML = `
+            <td>${result.timestamp || ''}</td>
+            <td>${result.src_ip || ''}</td>
+            <td>${result.dest_ip || ''}</td>
+            <td>${result.proto || ''}</td>
+            <td>${result.event_type || ''}</td>
+            <td>${result.classification.binary_label === 1 ? 'Malicious' : 'Benign'}</td>
+            <td>${(result.classification.binary_confidence * 100).toFixed(2)}%</td>
+        `;
+        
+        recentEventsBody.appendChild(row);
+    });
+}
+
+// PDF Download functionality
+document.getElementById('download-pdf').addEventListener('click', function() {
+    // Show loading indicator
+    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+    this.disabled = true;
+    
+    // Use html2canvas to capture the dashboard
+    html2canvas(document.querySelector('.dashboard-container'), {
+        scale: 1,
+        useCORS: true,
+        logging: false,
+        allowTaint: true
+    }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4'
+        });
+        
+        // Calculate dimensions to fit the dashboard in the PDF
+        const imgWidth = 210; // A4 width in mm
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+        
+        // Add title
+        pdf.setFontSize(16);
+        pdf.text('Traffic Analysis Dashboard Report', 105, 15, { align: 'center' });
+        pdf.setFontSize(12);
+        pdf.text('Generated on: ' + new Date().toLocaleString(), 105, 22, { align: 'center' });
+        
+        // Add the dashboard image
+        pdf.addImage(imgData, 'PNG', 0, 30, imgWidth, imgHeight);
+        
+        // Save the PDF
+        pdf.save('dashboard-report.pdf');
+        
+        // Reset button
+        document.getElementById('download-pdf').innerHTML = '<i class="fas fa-file-pdf"></i> Download PDF';
+        document.getElementById('download-pdf').disabled = false;
+    });
+});
+
+// Load data from the server
+fetch('/dashboard-data/{{ file_id }}')
+    .then(response => response.json())
+    .then(data => {
+        initDashboard(data.results);
+    })
+    .catch(error => {
+        console.error('Error loading dashboard data:', error);
+    });
+</script>
+{% endblock %}
